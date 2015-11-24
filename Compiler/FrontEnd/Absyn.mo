@@ -1573,11 +1573,11 @@ protected function traverseExpBidirSubExps
 algorithm
   (e, arg) := match (inExp, enterFunc, exitFunc, inArg)
     local
-      Exp e1, e2, e3;
-      Option<Exp> oe1;
+      Exp e1, e1m, e2, e2m, e3, e3m;
+      Option<Exp> oe1, oe1m;
       tuple<FuncType, FuncType, Argument> tup;
       Operator op;
-      ComponentRef cref;
+      ComponentRef cref, crefm;
       list<tuple<Exp, Exp>> else_ifs;
       list<Exp> expl;
       list<list<Exp>> mat_expl;
@@ -1596,42 +1596,42 @@ algorithm
 
     case (CREF(componentRef = cref), _, _, arg)
       equation
-        (cref, arg) = traverseExpBidirCref(cref, enterFunc, exitFunc, arg);
+        (crefm, arg) = traverseExpBidirCref(cref, enterFunc, exitFunc, arg);
       then
-        (CREF(cref), arg);
+        (if referenceEq(cref,crefm) then inExp else CREF(crefm), arg);
 
     case (BINARY(exp1 = e1, op = op, exp2 = e2), _, _, arg)
       equation
-        (e1, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg);
-        (e2, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg);
+        (e1m, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg);
+        (e2m, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg);
       then
-        (BINARY(e1, op, e2), arg);
+        (if referenceEq(e1,e1m) and referenceEq(e2,e2m) then inExp else BINARY(e1m, op, e2m), arg);
 
     case (UNARY(op = op, exp = e1), _, _, arg)
       equation
-        (e1, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg);
+        (e1m, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg);
       then
-        (UNARY(op, e1), arg);
+        (if referenceEq(e1,e1m) then inExp else UNARY(op, e1m), arg);
 
     case (LBINARY(exp1 = e1, op = op, exp2 = e2), _, _, arg)
       equation
-        (e1, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg);
-        (e2, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg);
+        (e1m, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg);
+        (e2m, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg);
       then
-        (LBINARY(e1, op, e2), arg);
+        (if referenceEq(e1,e1m) and referenceEq(e2,e2m) then inExp else LBINARY(e1m, op, e2m), arg);
 
     case (LUNARY(op = op, exp = e1), _, _, arg)
       equation
-        (e1, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg);
+        (e1m, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg);
       then
-        (LUNARY(op, e1), arg);
+        (if referenceEq(e1,e1m) then inExp else LUNARY(op, e1m), arg);
 
     case (RELATION(exp1 = e1, op = op, exp2 = e2), _, _, arg)
       equation
-        (e1, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg);
-        (e2, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg);
+        (e1m, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg);
+        (e2m, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg);
       then
-        (RELATION(e1, op, e2), arg);
+        (if referenceEq(e1,e1m) and referenceEq(e2,e2m) then inExp else RELATION(e1m, op, e2m), arg);
 
     case (IFEXP(ifExp = e1, trueBranch = e2, elseBranch = e3,
         elseIfBranch = else_ifs), _, _, arg)
@@ -1669,11 +1669,11 @@ algorithm
 
     case (RANGE(start = e1, step = oe1, stop = e2), _, _, arg)
       equation
-        (e1, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg);
-        (oe1, arg) = traverseExpOptBidir(oe1, enterFunc, exitFunc, arg);
-        (e2, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg);
+        (e1m, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg);
+        (oe1m, arg) = traverseExpOptBidir(oe1, enterFunc, exitFunc, arg);
+        (e2m, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg);
       then
-        (RANGE(e1, oe1, e2), arg);
+        (if referenceEq(e1,e1m) and referenceEq(e2,e2m) and referenceEq(oe1,oe1m) then inExp else RANGE(e1m, oe1m, e2m), arg);
 
     case (END(), _, _, _) then (inExp, inArg);
 
@@ -1685,16 +1685,16 @@ algorithm
 
     case (AS(id = id, exp = e1), _, _, arg)
       equation
-        (e1, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg);
+        (e1m, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg);
       then
-        (AS(id, e1), arg);
+        (if referenceEq(e1,e1m) then inExp else AS(id, e1m), arg);
 
     case (CONS(head = e1, rest = e2), _, _, arg)
       equation
-        (e1, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg);
-        (e2, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg);
+        (e1m, arg) = traverseExpBidir(e1, enterFunc, exitFunc, arg);
+        (e2m, arg) = traverseExpBidir(e2, enterFunc, exitFunc, arg);
       then
-        (CONS(e1, e2), arg);
+        (if referenceEq(e1,e1m) and referenceEq(e2,e2m) then inExp else CONS(e1m, e2m), arg);
 
     case (MATCHEXP(matchTy = match_ty, inputExp = e1, localDecls = match_decls,
         cases = match_cases, comment = cmt), _, _, arg)
@@ -1718,7 +1718,7 @@ algorithm
         (e1, arg) = traverseExpBidir(inExp.exp, enterFunc, exitFunc, arg);
         (e2, arg) = traverseExpBidir(inExp.index, enterFunc, exitFunc, arg);
       then
-        (DOT(e1, e2), arg);
+        (if referenceEq(inExp.exp,e1) and referenceEq(inExp.index,e2) then inExp else DOT(e1, e2), arg);
 
     else
       algorithm
@@ -4371,17 +4371,30 @@ public function setClassName "author: BZ
   Sets the name of the class"
   input Class inClass;
   input String newName;
-  output Class outClass;
-protected
-  Ident n;
-  Boolean p,f,e;
-  Restriction r;
-  ClassDef body;
-  Info info;
+  output Class outClass = inClass;
 algorithm
-  CLASS(_, p, f, e, r, body, info) := inClass;
-  outClass := CLASS(newName, p, f, e, r, body, info);
+  outClass := match outClass
+    case CLASS()
+      algorithm
+        outClass.name := newName;
+      then
+        outClass;
+  end match;
 end setClassName;
+
+public function setClassBody
+  input Class inClass;
+  input ClassDef inBody;
+  output Class outClass = inClass;
+algorithm
+  outClass := match outClass
+    case CLASS()
+      algorithm
+        outClass.body := inBody;
+      then
+        outClass;
+  end match;
+end setClassBody;
 
 public function crefEqual " Checks if the name of a ComponentRef is
  equal to the name of another ComponentRef, including subscripts.
@@ -5650,6 +5663,32 @@ algorithm
   end for;
   res := listReverse(res);
 end mergeAnnotations2;
+
+public function mergeCommentAnnotation
+  "Merges an annotation into a Comment option."
+  input Annotation inAnnotation;
+  input Option<Comment> inComment;
+  output Option<Comment> outComment;
+algorithm
+  outComment := match inComment
+    local
+      Annotation ann;
+      Option<String> cmt;
+
+    // No comment, create a new one.
+    case NONE()
+      then SOME(COMMENT(SOME(inAnnotation), NONE()));
+
+    // A comment without annotation, insert the annotation.
+    case SOME(COMMENT(annotation_ = NONE(), comment = cmt))
+      then SOME(COMMENT(SOME(inAnnotation), cmt));
+
+    // A comment with annotation, merge the annotations.
+    case SOME(COMMENT(annotation_ = SOME(ann), comment = cmt))
+      then SOME(COMMENT(SOME(mergeAnnotations(ann, inAnnotation)), cmt));
+
+  end match;
+end mergeCommentAnnotation;
 
 function isModificationOfPath
 "returns true or false if the given path is in the list of modifications"
